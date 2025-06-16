@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk YouTube to MP3 Downloader</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      pointer-events: none;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 3rem;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      animation: slideUp 0.8s ease-out;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+      background-size: 300% 100%;
+      animation: gradientShift 3s ease-in-out infinite;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .input-section {
+      margin-bottom: 2rem;
+    }
+
+    .input-label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+    }
+
+    .textarea-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    #linkBox {
+      width: 100%;
+      height: 180px;
+      padding: 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      resize: none;
+      transition: all 0.3s ease;
+      background: #f9fafb;
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    #linkBox:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: #ffffff;
+    }
+
+    #linkBox::placeholder {
+      color: #9ca3af;
+    }
+
+    .file-input-container {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .file-input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border: 2px dashed #d1d5db;
+      border-radius: 16px;
+      color: #6b7280;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .file-input-button:hover {
+      background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+      border-color: #9ca3af;
+      color: #374151;
+    }
+
+    .download-button {
+      width: 100%;
+      padding: 1.25rem 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .download-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.4);
+    }
+
+    .download-button:active {
+      transform: translateY(0);
+    }
+
+    .download-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading-container {
+      margin-top: 2rem;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    }
+
+    .loading-container.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e5e7eb;
+      border-radius: 50%;
+      border-top-color: #667eea;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #6b7280;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.3s ease;
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: 200px 0; }
+    }
+
+    .message {
+      margin-top: 2rem;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 500;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    }
+
+    .message.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .message.success {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .message.error {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #4c1d95;
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+      }
+      
+      #linkBox {
+        height: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fab fa-youtube"></i> YouTube to MP3</h1>
+      <p>Convert multiple YouTube videos to MP3 format instantly</p>
+    </div>
+
+    <div class="input-section">
+      <label class="input-label" for="linkBox">
+        <i class="fas fa-link"></i> YouTube Links
+      </label>
+      <div class="textarea-container">
+        <textarea 
+          id="linkBox" 
+          placeholder="Paste your YouTube links here, one per line...&#10;&#10;Example:&#10;https://youtube.com/watch?v=example1&#10;https://youtube.com/watch?v=example2"
+        ></textarea>
+      </div>
+
+      <div class="file-input-container">
+        <div class="file-input-wrapper">
+          <input type="file" accept=".txt" class="file-input" onchange="loadFile(event)" />
+          <div class="file-input-button">
+            <i class="fas fa-upload"></i>
+            <span>Or upload a .txt file with links</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="download-button" onclick="download()" id="downloadBtn">
+        <i class="fas fa-download"></i>
+        <span>Start Download</span>
+      </button>
+    </div>
+
+    <div class="loading-container" id="loadingContainer">
+      <div class="loader"></div>
+      <div class="loading-text" id="loadingText">Processing your request...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="stats" id="stats" style="display: none;">
+        <span>Links: <strong id="totalLinks">0</strong></span>
+        <span>Processed: <strong id="processedLinks">0</strong></span>
+        <span>Success: <strong id="successLinks">0</strong></span>
+      </div>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    let isProcessing = false;
+
+    function loadFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function() {
+        document.getElementById("linkBox").value = reader.result;
+        showMessage(`File "${file.name}" loaded successfully!`, 'success');
+      };
+      reader.readAsText(file);
+    }
+
+    function showMessage(text, type = 'success') {
+      const message = document.getElementById("message");
+      message.textContent = text;
+      message.className = `message ${type} show`;
+      
+      setTimeout(() => {
+        message.classList.remove('show');
+      }, 5000);
+    }
+
+    function updateProgress(processed, total, success) {
+      const progressFill = document.getElementById("progressFill");
+      const stats = document.getElementById("stats");
+      const totalLinks = document.getElementById("totalLinks");
+      const processedLinks = document.getElementById("processedLinks");
+      const successLinks = document.getElementById("successLinks");
+
+      const percentage = (processed / total) * 100;
+      progressFill.style.width = `${percentage}%`;
+
+      totalLinks.textContent = total;
+      processedLinks.textContent = processed;
+      successLinks.textContent = success;
+      stats.style.display = 'flex';
+    }
+
+    async function download() {
+      if (isProcessing) return;
+
+      const linkBox = document.getElementById("linkBox");
+      const loadingContainer = document.getElementById("loadingContainer");
+      const loadingText = document.getElementById("loadingText");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const message = document.getElementById("message");
+
+      const links = linkBox.value.split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      if (links.length === 0) {
+        showMessage("Please provide at least one YouTube link.", 'error');
+        return;
+      }
+
+      // Validate YouTube URLs
+      const invalidLinks = links.filter(link => 
+        !link.includes('youtube.com') && !link.includes('youtu.be')
+      );
+
+      if (invalidLinks.length > 0) {
+        showMessage(`Found ${invalidLinks.length} invalid YouTube link(s). Please check your URLs.`, 'error');
+        return;
+      }
+
+      isProcessing = true;
+      downloadBtn.disabled = true;
+      downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Processing...</span>';
+      
+      loadingContainer.classList.add('show');
+      message.classList.remove('show');
+
+      const loadingMessages = [
+        "Analyzing YouTube links...",
+        "Connecting to download servers...",
+        "Processing audio extraction...",
+        "Optimizing audio quality...",
+        "Finalizing downloads..."
+      ];
+
+      let messageIndex = 0;
+      const messageInterval = setInterval(() => {
+        loadingText.textContent = loadingMessages[messageIndex];
+        messageIndex = (messageIndex + 1) % loadingMessages.length;
+      }, 2000);
+
+      try {
+        // Simulate progress updates
+        let processed = 0;
+        let success = 0;
+        updateProgress(processed, links.length, success);
+
+        const progressInterval = setInterval(() => {
+          if (processed < links.length) {
+            processed++;
+            success += Math.random() > 0.1 ? 1 : 0; // 90% success rate simulation
+            updateProgress(processed, links.length, success);
+          }
+        }, 1000);
+
+        const res = await fetch("http://localhost:5000/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls: links })
+        });
+
+        clearInterval(messageInterval);
+        clearInterval(progressInterval);
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          updateProgress(links.length, links.length, links.length);
+          showMessage(`✅ Successfully processed ${links.length} link(s)! ${data.message}`, 'success');
+        } else {
+          showMessage(`❌ Error: ${data.error || "Something went wrong"}`, 'error');
+        }
+
+      } catch (err) {
+        clearInterval(messageInterval);
+        showMessage("🔌 Server connection failed. Please check if the server is running.", 'error');
+        console.error(err);
+      } finally {
+        isProcessing = false;
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="fas fa-download"></i> <span>Start Download</span>';
+        
+        setTimeout(() => {
+          loadingContainer.classList.remove('show');
+        }, 2000);
+      }
+    }
+
+    // Add some interactive effects
+    document.addEventListener('DOMContentLoaded', function() {
+      const container = document.querySelector('.container');
+      
+      // Add subtle hover effect to container
+      container.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+      });
+      
+      container.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+
+      // Add typing effect to placeholder
+      const textarea = document.getElementById('linkBox');
+      textarea.addEventListener('focus', function() {
+        this.classList.add('pulse');
+      });
+      
+      textarea.addEventListener('blur', function() {
+        this.classList.remove('pulse');
+      });
+    });
+  </script>
+</body>
+</html>
